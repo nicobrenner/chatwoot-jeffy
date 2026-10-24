@@ -1,0 +1,37 @@
+# Chatwoot-Jeffy bridge configuration
+
+chatwoot:
+  url: "http://localhost:3000"
+  api_token: "your-chatwoot-api-token"
+  account_id: 1
+  webhook_secret: "your-webhook-secret"
+
+jeffy:
+  url: "http://localhost:8400"
+  task: "inbox_router"
+  confidence_threshold: 0.5
+
+# Map Jeffy labels to Chatwoot actions.
+# Each label can set: labels (additive), team_id, priority.
+routing:
+  - label: "billing"
+    chatwoot_labels: ["billing", "auto-classified"]
+    team_id: 2
+    priority: "medium"
+
+  - label: "technical_support"
+    chatwoot_labels: ["technical", "auto-classified"]
+    team_id: 3
+    priority: "medium"
+
+  - label: "urgent"
+    chatwoot_labels: ["urgent", "auto-classified"]
+    team_id: 1
+    priority: "urgent"
+
+  - label: "spam"
+    chatwoot_labels: ["spam", "auto-classified"]
+
+# Fallback when no routing rule matches or confidence is below threshold
+fallback:
+  chatwoot_labels: ["needs-review"]
