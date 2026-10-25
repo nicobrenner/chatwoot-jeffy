@@ -8,29 +8,60 @@ chatwoot:
 
 jeffy:
   url: "http://localhost:8400"
-  task: "inbox_router"
+  task: "support_ticket"
   confidence_threshold: 0.5
 
 # Map Jeffy labels to Chatwoot actions.
-# Each label can set: labels (additive), team_id, priority.
+# Each label can set: chatwoot_labels (additive), team_id, priority.
+#
+# IMPORTANT: each `label` must be one the chosen task actually emits, or the
+# rule never fires and everything falls through to the fallback below. List a
+# task's labels with: curl localhost:8400/v1/capabilities/support_ticket
+# These 11 are the full label set for support_ticket.
 routing:
-  - label: "billing"
+  - label: "payment"
     chatwoot_labels: ["billing", "auto-classified"]
-    team_id: 2
+    priority: "high"
+
+  - label: "refund"
+    chatwoot_labels: ["billing", "auto-classified"]
+    priority: "high"
+
+  - label: "invoice"
+    chatwoot_labels: ["billing", "auto-classified"]
     priority: "medium"
 
-  - label: "technical_support"
-    chatwoot_labels: ["technical", "auto-classified"]
-    team_id: 3
+  - label: "cancel"
+    chatwoot_labels: ["cancel", "auto-classified"]
+    priority: "high"
+
+  - label: "subscription"
+    chatwoot_labels: ["subscription", "auto-classified"]
     priority: "medium"
 
-  - label: "urgent"
-    chatwoot_labels: ["urgent", "auto-classified"]
-    team_id: 1
-    priority: "urgent"
+  - label: "account"
+    chatwoot_labels: ["account", "auto-classified"]
+    priority: "medium"
 
-  - label: "spam"
-    chatwoot_labels: ["spam", "auto-classified"]
+  - label: "shipping"
+    chatwoot_labels: ["shipping", "auto-classified"]
+    priority: "medium"
+
+  - label: "delivery"
+    chatwoot_labels: ["shipping", "auto-classified"]
+    priority: "medium"
+
+  - label: "order"
+    chatwoot_labels: ["order", "auto-classified"]
+    priority: "medium"
+
+  - label: "contact"
+    chatwoot_labels: ["contact", "auto-classified"]
+    priority: "low"
+
+  - label: "feedback"
+    chatwoot_labels: ["feedback", "auto-classified"]
+    priority: "low"
 
 # Fallback when no routing rule matches or confidence is below threshold
 fallback:

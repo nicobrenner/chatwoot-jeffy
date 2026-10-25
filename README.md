@@ -11,7 +11,7 @@ A lightweight webhook bridge sits between Chatwoot and Jeffy:
 ```
 Chatwoot (message_created webhook)
     → Bridge (this service)
-        → Jeffy /v1/classify
+        → Jeffy /v1/predict
         → Chatwoot API (labels, team, priority)
 ```
 
@@ -28,7 +28,7 @@ The bridge:
 
 ```bash
 pip install jeffy-classify
-jeffy serve
+jeffy-serve
 ```
 
 **2. Start the bridge**
@@ -60,28 +60,29 @@ chatwoot:
 
 jeffy:
   url: "http://localhost:8400"
-  task: "inbox_router"          # any Jeffy task
+  task: "support_ticket"        # any Jeffy task
   confidence_threshold: 0.5     # below this → fallback
 
 routing:
-  - label: "billing"
+  - label: "payment"
     chatwoot_labels: ["billing", "auto-classified"]
     team_id: 2
-    priority: "medium"
+    priority: "high"
 
-  - label: "technical_support"
-    chatwoot_labels: ["technical", "auto-classified"]
-    team_id: 3
-    priority: "medium"
+  - label: "refund"
+    chatwoot_labels: ["billing", "auto-classified"]
+    team_id: 2
+    priority: "high"
 
-  - label: "spam"
-    chatwoot_labels: ["spam", "auto-classified"]
+  - label: "shipping"
+    chatwoot_labels: ["shipping", "auto-classified"]
+    priority: "medium"
 
 fallback:
   chatwoot_labels: ["needs-review"]
 ```
 
-Each routing rule maps a Jeffy label to Chatwoot actions. All fields are optional:
+The `label` in each rule must match a label the chosen task actually emits (run `curl localhost:8400/v1/capabilities/support_ticket` to list them). Each rule maps that label to Chatwoot actions. All fields are optional:
 - `chatwoot_labels`: labels to add (merged with existing)
 - `team_id`: team to assign the conversation to
 - `priority`: one of `urgent`, `high`, `medium`, `low`
@@ -97,15 +98,18 @@ This starts both Jeffy and the bridge. Point your Chatwoot webhook at `http://br
 
 ## Jeffy tasks
 
-Jeffy ships with 15+ pretrained classifiers. Pick the one that fits your use case:
+Jeffy ships with 70+ pretrained classifiers. Pick the one that fits your use case:
 
-| Task | Classes | Good for |
+| Task | Classes | Labels |
 |---|---|---|
-| `inbox_router` | 4 | Email routing (support, sales, spam, personal) |
-| `banking77` | 77 | Banking intents (billing, transfers, cards) |
-| `emotion` | 6 | Sentiment detection |
-| `sms_spam` | 2 | Spam filtering |
-| `clinc_oos` | 150 | Intent detection with out-of-scope |
+| `support_ticket` | 11 | account, cancel, contact, delivery, feedback, invoice, order, payment, refund, shipping, subscription |
+| `banking77` | 77 | Banking intents (card issues, transfers, top-ups) |
+| `emotion` | 6 | sadness, joy, love, anger, fear, surprise |
+| `sms_spam` | 2 | ham, spam |
+| `clinc_oos` | 151 | Intent detection with out-of-scope |
+| `inbox_router` | 4 | family, notification, promo, work |
+
+`support_ticket` is the best default for customer support. List every task with `curl localhost:8400/v1/capabilities`.
 
 Or train your own classifier on your labeled conversations:
 
@@ -113,10 +117,12 @@ Or train your own classifier on your labeled conversations:
 from jeffy.train import train_classifier
 
 clf = train_classifier(texts, labels, task_id="my-chatwoot-router")
-clf.save("my-chatwoot-router")
+clf.save("./model_pack")   # writes ./model_pack/my-chatwoot-router/
 ```
 
-Then set `task: "my-chatwoot-router"` in the config.
+Serve it with `JEFFY_PACK_DIR=./model_pack jeffy-serve`, then set `task: "my-chatwoot-router"` in the config.
+
+You can also train without Python by POSTing labeled examples to Jeffy's `/v1/train` endpoint, and send corrections back to `/v1/feedback` so the classifier improves from agent behavior (requires jeffy-classify 0.1.0a16+).
 
 ## How it compares to Chatwoot Captain
 

@@ -52,7 +52,7 @@ async def classify(text: str) -> dict:
     jeffy = CONFIG["jeffy"]
     async with httpx.AsyncClient() as client:
         resp = await client.post(
-            f"{jeffy['url']}/v1/classify",
+            f"{jeffy['url']}/v1/predict",
             json={"text": text, "task": jeffy["task"]},
             timeout=10,
         )
